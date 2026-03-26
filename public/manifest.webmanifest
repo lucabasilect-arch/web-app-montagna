@@ -1,0 +1,15 @@
+{
+  "name": "Montagna Dashboard",
+  "short_name": "Montagna",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07141b",
+  "theme_color": "#07141b",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512"
+    }
+  ]
+}
