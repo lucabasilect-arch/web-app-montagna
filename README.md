@@ -99,17 +99,26 @@ Per aggiungere nuove sezioni basta creare un nuovo componente in `src/components
 - `public/service-worker.js` fa cache degli asset principali per una navigazione base anche offline.
 - La registrazione avviene in `src/main.tsx`.
 
-## Deploy gratuito consigliato (Cloudflare Pages)
+## Sito 100% gratuito con API attive (Cloudflare Pages)
 
-1. Collega il repository su Cloudflare Pages.
-2. Build command: `npm run build`
-3. Build output directory: `dist`
-4. Vai su Settings -> Environment variables e inserisci:
+GitHub Pages **non** esegue funzioni server-side, quindi le API non funzionano li. 
+Per un sito completo **gratuito** con API attive usa Cloudflare Pages.
+
+Passi semplici:
+
+1. Crea un account gratuito su Cloudflare.
+2. Vai su Pages -> Create a project -> Connect to Git.
+3. Seleziona il repo `web-app-montagna`.
+4. Build command: `npm run build`
+5. Output directory: `dist`
+6. Settings -> Environment variables:
   - `WEATHERAPI_KEY`
   - `OPENWEATHER_KEY`
-5. Deploy: l'endpoint `functions/api/weather.js` diventa disponibile come `/api/weather`.
+7. Deploy.
 
-Cloudflare Pages free supporta Functions + env vars senza piano a pagamento.
+Risultato:
+- Sito online su `https://<nome-progetto>.pages.dev`
+- API meteo attiva su `https://<nome-progetto>.pages.dev/api/weather`
 
 ## Deploy automatico su GitHub Pages (senza saper configurare)
 
@@ -150,6 +159,13 @@ Nota: GitHub Pages non esegue Functions server-side, quindi endpoint `/api/weath
 1. `npm run build` genera `dist/`.
 2. Deploy statico su `dist`.
 3. Nota: su GitHub Pages non hai Functions, quindi meteo multi-fonte server-side non e disponibile.
+
+### GitLab Pages (100% gratuito)
+1. Usa template `Pages/Plain HTML`.
+2. Carica il file `.gitlab-ci.yml` gia pronto nel repository.
+3. Push su `main` e attendi il job `pages` verde.
+4. URL finale: `https://<namespace>.gitlab.io/<nome-progetto>/`.
+5. Nota: GitLab Pages non esegue Functions, quindi `/api/weather` non e disponibile (fallback Open-Meteo lato client).
 
 ## Idee aggiuntive
 
