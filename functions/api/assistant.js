@@ -1,10 +1,21 @@
 const SYSTEM_PROMPT = "Sei un assistente per una dashboard di casa/terreno in montagna. Rispondi in italiano con suggerimenti pratici, chiari e brevi. Se la richiesta non riguarda la dashboard, rispondi comunque con cortesia.";
 
 const DEFAULT_GEMINI_MODEL = "gemini-1.5-flash-latest";
-const FALLBACK_GEMINI_MODELS = ["gemini-1.5-flash-latest", "gemini-1.5-pro-latest"];
+const FALLBACK_GEMINI_MODELS = [
+  "gemini-1.5-flash-latest",
+  "gemini-1.5-pro-latest",
+  "gemini-1.5-flash",
+  "gemini-1.5-pro",
+  "gemini-1.0-pro",
+];
+
+let cachedAvailableModels = null;
 
 const buildGeminiUrl = (modelName, apiKey) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+const buildGeminiModelsUrl = (apiKey) =>
+  `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
 
 const getGeminiError = (text) => {
   if (!text) {
@@ -29,6 +40,27 @@ const shouldRetryModel = (error) => {
   }
   const message = String(error.message || "").toLowerCase();
   return message.includes("not found") || message.includes("not supported for generatecontent");
+};
+
+const fetchAvailableModels = async (apiKey) => {
+  if (cachedAvailableModels) {
+    return cachedAvailableModels;
+  }
+  const response = await fetch(buildGeminiModelsUrl(apiKey));
+  if (!response.ok) {
+    return null;
+  }
+  const data = await response.json();
+  const models = Array.isArray(data?.models) ? data.models : [];
+  const available = models
+    .filter((model) => Array.isArray(model?.supportedGenerationMethods))
+    .filter((model) => model.supportedGenerationMethods.includes("generateContent"))
+    .map((model) => String(model?.name || ""))
+    .filter(Boolean)
+    .map((name) => name.replace(/^models\//, ""))
+    .filter(Boolean);
+  cachedAvailableModels = available.length ? available : null;
+  return cachedAvailableModels;
 };
 
 export const onRequestPost = async ({ request, env }) => {
@@ -58,8 +90,10 @@ export const onRequestPost = async ({ request, env }) => {
 
     let response = null;
     let lastError = null;
+    let triedAvailableModels = false;
 
-    for (const model of modelsToTry) {
+    for (let index = 0; index < modelsToTry.length; index += 1) {
+      const model = modelsToTry[index];
       response = await fetch(buildGeminiUrl(model, env.GEMINI_API_KEY), {
         method: "POST",
         headers: {
@@ -88,6 +122,18 @@ export const onRequestPost = async ({ request, env }) => {
       lastError = getGeminiError(text || "AI error");
       if (!shouldRetryModel(lastError)) {
         break;
+      }
+
+      if (!triedAvailableModels && index === modelsToTry.length - 1) {
+        triedAvailableModels = true;
+        const availableModels = await fetchAvailableModels(env.GEMINI_API_KEY);
+        if (Array.isArray(availableModels)) {
+          for (const availableModel of availableModels) {
+            if (!modelsToTry.includes(availableModel)) {
+              modelsToTry.push(availableModel);
+            }
+          }
+        }
       }
     }
 
