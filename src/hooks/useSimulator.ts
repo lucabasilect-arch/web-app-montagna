@@ -23,10 +23,9 @@ type Notification = {
 
 type SimulatorOptions = {
   automationEnabled: boolean;
-  mockMode: boolean;
 };
 
-export const useSimulator = ({ automationEnabled, mockMode }: SimulatorOptions) => {
+export const useSimulator = ({ automationEnabled }: SimulatorOptions) => {
   const [smartPlugs, setSmartPlugs] = useState<SmartPlug[]>(() => createInitialPlugs());
   const [sensorReadings, setSensorReadings] = useState<SensorReading[]>(() => createSensorReadings());
   const [weather, setWeather] = useState<WeatherReading>(() => randomWeather());
@@ -34,7 +33,7 @@ export const useSimulator = ({ automationEnabled, mockMode }: SimulatorOptions) 
   const [robot, setRobot] = useState<RobotState>(() => createRobotState());
   const [cameraAlerts, setCameraAlerts] = useState<CameraAlert[]>(() => [createCameraAlert(0)]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [weatherSources, setWeatherSources] = useState<string[]>(["Mock"]);
+  const [weatherSources, setWeatherSources] = useState<string[]>(["In caricamento"]);
   const [weatherUpdatedAt, setWeatherUpdatedAt] = useState<string>(
     new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
   );
@@ -50,14 +49,8 @@ export const useSimulator = ({ automationEnabled, mockMode }: SimulatorOptions) 
   };
 
   useEffect(() => {
-    if (!mockMode) {
-      return undefined;
-    }
     const interval = window.setInterval(() => {
       setSensorReadings(createSensorReadings());
-      setWeather(randomWeather());
-      setWeatherSources(["Mock"]);
-      setWeatherUpdatedAt(new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }));
       setSmartPlugs((prev) =>
         prev.map((plug) => ({
           ...plug,
@@ -74,12 +67,9 @@ export const useSimulator = ({ automationEnabled, mockMode }: SimulatorOptions) 
       }));
     }, 6000);
     return () => window.clearInterval(interval);
-  }, [mockMode]);
+  }, []);
 
   useEffect(() => {
-    if (mockMode) {
-      return undefined;
-    }
     let active = true;
     const loadWeather = async () => {
       try {
@@ -98,11 +88,12 @@ export const useSimulator = ({ automationEnabled, mockMode }: SimulatorOptions) 
           return;
         }
         if (!weatherErrorNotified) {
-          pushNotification("Errore meteo: uso simulazione temporanea");
+          pushNotification("Errore meteo: uso fallback temporaneo");
           setWeatherErrorNotified(true);
         }
         setWeather(randomWeather());
-        setWeatherSources(["Fallback"]);
+        setWeatherSources(["Fallback locale"]);
+        setWeatherUpdatedAt(new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }));
       }
     };
     loadWeather();
@@ -111,13 +102,9 @@ export const useSimulator = ({ automationEnabled, mockMode }: SimulatorOptions) 
       active = false;
       window.clearInterval(interval);
     };
-  }, [mockMode, weatherErrorNotified]);
+  }, [weatherErrorNotified]);
 
   const togglePlug = (id: string) => {
-    if (!mockMode) {
-      pushNotification("Mock disattivato: collega una API reale per controllare le prese");
-      return;
-    }
     setSmartPlugs((prev) =>
       prev.map((plug) => {
         if (plug.id !== id) {
@@ -135,10 +122,6 @@ export const useSimulator = ({ automationEnabled, mockMode }: SimulatorOptions) 
   };
 
   const triggerIrrigation = (mode: "manual" | "auto") => {
-    if (!mockMode) {
-      pushNotification("Mock disattivato: collega una API reale per l'irrigazione");
-      return;
-    }
     const timestamp = new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
     const duration = mode === "manual" ? 10 : 7 + Math.round(Math.random() * 5);
     const soilReading = sensorReadings.find((reading) => reading.type === "soil");
@@ -165,10 +148,6 @@ export const useSimulator = ({ automationEnabled, mockMode }: SimulatorOptions) 
   };
 
   const sendRobotCommand = (command: "start" | "stop" | "return") => {
-    if (!mockMode) {
-      pushNotification("Mock disattivato: collega una API reale per il robot");
-      return;
-    }
     setRobot((prev) => {
       let status: RobotState["status"] = prev.status;
       let message = "Comando accettato";
@@ -195,10 +174,6 @@ export const useSimulator = ({ automationEnabled, mockMode }: SimulatorOptions) 
   };
 
   const simulateAlert = () => {
-    if (!mockMode) {
-      pushNotification("Mock disattivato: in attesa di rilevazioni reali");
-      return;
-    }
     setCameraAlerts((prev) => [createCameraAlert(prev.length), ...prev].slice(0, 4));
     pushNotification("Rilevato movimento intorno al terreno");
   };
@@ -207,17 +182,11 @@ export const useSimulator = ({ automationEnabled, mockMode }: SimulatorOptions) 
   const airTemperature = sensorReadings.find((reading) => reading.id === "air-temperature");
 
   const weatherNote = useMemo(() => {
-    if (!mockMode) {
-      return `Media meteo su ${weatherSources.length} fonti per ${getWeatherLocationLabel()}`;
+    if (weatherSources.includes("Fallback locale")) {
+      return "Connessione alle API meteo instabile: fallback locale attivo";
     }
-    if (weather.rainProbability > 75) {
-      return "Più probabile pioggia: sospendi irrigazione manuale";
-    }
-    if ((soilReading?.value ?? 50) < 40 && automationEnabled) {
-      return "Terreno asciutto: l'irrigazione automatica è attiva";
-    }
-    return "Terreno stabile, controlla il robot e le prese";
-  }, [automationEnabled, mockMode, soilReading, weather.rainProbability, weatherSources.length]);
+    return `Media meteo su ${weatherSources.length} fonti per ${getWeatherLocationLabel()}`;
+  }, [weatherSources]);
 
   const energySummary = useMemo(() => {
     const totalPowerW = smartPlugs.reduce((sum, plug) => sum + plug.powerW, 0);
@@ -240,7 +209,7 @@ export const useSimulator = ({ automationEnabled, mockMode }: SimulatorOptions) 
     return [
       {
         label: "Irrigazione mattino",
-        status: automationEnabled && mockMode && soilValue < 40 && rainOk ? "Attiva" : "Standby",
+        status: automationEnabled && soilValue < 40 && rainOk ? "Attiva" : "Standby",
         detail: `Umidita ${soilValue.toFixed(1)}% · Pioggia ${weather.rainProbability}%`,
       },
       {
@@ -254,7 +223,7 @@ export const useSimulator = ({ automationEnabled, mockMode }: SimulatorOptions) 
         detail: `Temperatura ${airTemperature?.value?.toFixed(1) ?? "--"}°C`,
       },
     ];
-  }, [airTemperature, automationEnabled, mockMode, robot.battery, soilReading, weather.rainProbability]);
+  }, [airTemperature, automationEnabled, robot.battery, soilReading, weather.rainProbability]);
 
   const securityStatus = useMemo(() => {
     const latestAlert = cameraAlerts[0];

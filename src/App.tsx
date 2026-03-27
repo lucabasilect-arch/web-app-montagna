@@ -9,7 +9,6 @@ import { getWeatherLocationLabel } from "./services/weatherService";
 
 const App: React.FC = () => {
   const [automationEnabled, setAutomationEnabled] = useLocalStorage("montagna-automation", true);
-  const [mockMode, setMockMode] = useLocalStorage("montagna-mock-mode", true);
   const {
     smartPlugs,
     sensorReadings,
@@ -29,9 +28,9 @@ const App: React.FC = () => {
     sendRobotCommand,
     simulateAlert,
     weatherNote,
-  } = useSimulator({ automationEnabled, mockMode });
+  } = useSimulator({ automationEnabled });
 
-  const statusTag = mockMode ? "Mock attivo" : "Meteo reale";
+  const statusTag = "Meteo reale";
   const totalPowerKw = energySummary.totalPowerW / 1000;
   const weatherLocationLabel = getWeatherLocationLabel();
 
@@ -40,15 +39,13 @@ const App: React.FC = () => {
       <Navigation
         automationEnabled={automationEnabled}
         onToggleAutomation={setAutomationEnabled}
-        mockMode={mockMode}
-        onToggleMock={setMockMode}
       />
       <main className="mx-auto mt-24 max-w-5xl px-4 pb-16">
         <section id="dashboard" className="space-y-2 scroll-mt-28 fade-up">
           <p className="text-xs uppercase tracking-[0.5em] text-sky-300">Dashboard</p>
           <h2 className="text-3xl font-semibold text-white">Controllo terreno & casa</h2>
           <p className="text-sm text-slate-300">
-            Tutti i sistemi sotto controllo, pronto per collegare dispositivi reali o continuare in mock mode.
+            Tutti i sistemi sotto controllo con meteo reale e automazioni sempre attive.
           </p>
           <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[0.65rem] uppercase tracking-[0.3em] text-slate-200">
             <span className="h-2 w-2 rounded-full bg-emerald-400" />
@@ -107,7 +104,7 @@ const App: React.FC = () => {
                 <p className="text-3xl font-semibold text-white">{soilReading?.value.toFixed(1) ?? "--"}%</p>
                 <p className="text-xs text-slate-300">umidità attuale</p>
               </div>
-              <p className="mt-2 text-xs text-slate-300">Utilizza la logica pioggia/mocks per anticipare le irrigazioni.</p>
+              <p className="mt-2 text-xs text-slate-300">Usa la logica pioggia e umidita per anticipare le irrigazioni.</p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <button
                   type="button"
@@ -221,8 +218,8 @@ const App: React.FC = () => {
                   },
                   {
                     label: "Modalita",
-                    detail: mockMode ? "Simulazione attiva" : "Attendere API",
-                    status: mockMode ? "Mock" : "API",
+                    detail: "Meteo in tempo reale da API",
+                    status: "API",
                     tone: "neutral",
                   },
                 ]}
