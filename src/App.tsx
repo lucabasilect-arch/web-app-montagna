@@ -384,21 +384,19 @@ const App: React.FC = () => {
               })}
             </section>
 
-            <section className="mt-8 fade-up">
-              <div className="wood-card p-5">
-                <div className="wood-pill mb-4">UN DATO CHE POTREBBE INTERESSARE</div>
-                <div className="flex items-start gap-3 text-amber-950">
-                  <span className="text-2xl">💡</span>
-                  <div>
-                    <p key={`${funFactState.date}-${funFactState.text.slice(0, 12)}`} className="fun-fact-text fade-up">
-                      {funFactPending && !funFactState.text
-                        ? "Sto preparando il dato di oggi..."
-                        : funFactState.text || "Nessun dato disponibile."}
-                    </p>
-                    {funFactError && !funFactPending && (
-                      <p className="mt-2 text-xs text-amber-900/60">Aggiornamento non riuscito.</p>
-                    )}
-                  </div>
+            <section className="mt-8 space-y-3 fade-up">
+              <div className="wood-pill">UN DATO CHE POTREBBE INTERESSARE</div>
+              <div className="flex items-start gap-3 text-amber-950">
+                <span className="text-2xl">💡</span>
+                <div>
+                  <p key={`${funFactState.date}-${funFactState.text.slice(0, 12)}`} className="fun-fact-text fade-up">
+                    {funFactPending && !funFactState.text
+                      ? "Sto preparando il dato di oggi..."
+                      : funFactState.text || "Nessun dato disponibile."}
+                  </p>
+                  {funFactError && !funFactPending && (
+                    <p className="mt-2 text-xs text-amber-900/60">Aggiornamento non riuscito.</p>
+                  )}
                 </div>
               </div>
             </section>
