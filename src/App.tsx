@@ -78,30 +78,30 @@ const App: React.FC = () => {
       secondary: deviceDataAvailable ? "Perimetro e alert" : "N/D",
     },
     {
-      key: "notifiche",
-      title: "Problemi",
-      emoji: "⚠️",
-      value: deviceDataAvailable && securityStatus.presenceRisk ? "Allerta" : "N/D",
-      secondary: deviceDataAvailable ? "Eventi critici" : "N/D",
-    },
-    {
       key: "sensori",
       title: "Notifiche",
       emoji: "🔔",
       value: deviceDataAvailable ? "OK" : "N/D",
       secondary: deviceDataAvailable ? "Eventi recenti" : "N/D",
     },
+    {
+      key: "notifiche",
+      title: "Problemi",
+      emoji: "⚠️",
+      value: deviceDataAvailable && securityStatus.presenceRisk ? "Allerta" : "N/D",
+      secondary: deviceDataAvailable ? "Eventi critici" : "N/D",
+    },
   ];
 
 
   return (
     <div className="relative min-h-screen pb-16">
-      <main className="mx-auto mt-12 max-w-4xl px-5 pb-16">
+      <main className="mx-auto mt-12 max-w-5xl px-5 pb-16">
         <section className="space-y-4 fade-up">
           <div className="wood-banner">{todayLabel.toUpperCase()} · {weather.temperature.toFixed(1)}°C</div>
         </section>
 
-        <section className="mt-6 grid grid-cols-2 gap-[46px] fade-up">
+        <section className="mt-6 grid grid-cols-2 gap-5 fade-up">
           {cards.map((card) => {
             const accent = accentByKey[card.key];
             const iconStyle: React.CSSProperties = {
