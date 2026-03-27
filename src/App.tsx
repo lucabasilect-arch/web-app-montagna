@@ -101,7 +101,7 @@ const App: React.FC = () => {
           <div className="wood-banner">{todayLabel.toUpperCase()} · {weather.temperature.toFixed(1)}°C</div>
         </section>
 
-        <section className="mt-6 grid grid-cols-2 gap-5 fade-up">
+        <section className="mt-6 grid grid-cols-2 gap-[20px] fade-up">
           {cards.map((card) => {
             const accent = accentByKey[card.key];
             const iconStyle: React.CSSProperties = {
