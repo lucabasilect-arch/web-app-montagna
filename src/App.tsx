@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import Navigation from "./components/Navigation";
 import { useSimulator } from "./hooks/useSimulator";
 import { useLocalStorage } from "./hooks/useLocalStorage";
@@ -74,7 +74,6 @@ const App: React.FC = () => {
     },
   ];
 
-  const [selectedCard, setSelectedCard] = useState<SectionKey | null>(null);
 
   return (
     <div className="relative min-h-screen pb-16">
@@ -82,7 +81,7 @@ const App: React.FC = () => {
         automationEnabled={automationEnabled}
         onToggleAutomation={setAutomationEnabled}
       />
-      <main className="mx-auto mt-24 max-w-5xl px-5 pb-16">
+      <main className="mx-auto mt-24 max-w-4xl px-5 pb-16">
         <section className="space-y-4 fade-up">
           <div className="wood-banner">{todayLabel.toUpperCase()} · {weather.temperature.toFixed(1)}°C</div>
           <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.3em] text-emerald-100">
@@ -91,15 +90,12 @@ const App: React.FC = () => {
           </div>
         </section>
 
-        <section className="mt-6 grid gap-6 sm:grid-cols-2 fade-up">
+        <section className="mt-6 grid gap-10 sm:grid-cols-2 fade-up">
           {cards.map((card) => (
             <button
               key={card.key}
               type="button"
-              onClick={() => setSelectedCard(card.key)}
-              className={`wood-card aspect-square p-5 text-left transition ${
-                selectedCard === card.key ? "ring-2 ring-amber-700/70" : ""
-              }`}
+              className="wood-card aspect-square p-5 text-left transition"
             >
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-amber-950 underline decoration-amber-700/70 underline-offset-4">

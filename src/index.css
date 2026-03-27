@@ -28,10 +28,10 @@ h4 {
 body {
   min-height: 100vh;
   background:
-    linear-gradient(180deg, rgba(10, 18, 12, 0.35), rgba(6, 10, 8, 0.7)),
-    url("/forest-bg.jpg") center/cover no-repeat,
-    linear-gradient(135deg, #07120a 0%, #0b1b11 50%, #1a120a 100%);
+    linear-gradient(180deg, rgba(8, 12, 9, 0.18), rgba(8, 12, 9, 0.35)),
+    url("/forest-bg.jpg") center/cover no-repeat;
   background-attachment: fixed;
+  background-color: #0b1b11;
   color: white;
   position: relative;
   overflow-x: hidden;
@@ -39,17 +39,7 @@ body {
 
 body::before,
 body::after {
-  content: "";
-  position: fixed;
-  width: 260px;
-  height: 260px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(47, 156, 107, 0.35), transparent 70%);
-  filter: blur(10px);
-  opacity: 0.7;
-  z-index: 0;
-  pointer-events: none;
-  animation: float 16s ease-in-out infinite;
+  display: none;
 }
 
 body::before {
@@ -58,10 +48,7 @@ body::before {
 }
 
 body::after {
-  bottom: 10%;
-  left: -80px;
-  background: radial-gradient(circle, rgba(90, 61, 39, 0.35), transparent 70%);
-  animation-delay: 4s;
+  display: none;
 }
 
 #root {
