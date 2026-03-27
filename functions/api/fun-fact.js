@@ -1,4 +1,5 @@
-const FUN_FACT_PROMPT = "Scrivi un breve fun fact (massimo 2 frasi) utile o curioso riguardante una casa in montagna. Il contenuto deve essere specifico per ambienti montani, clima freddo, neve, gelo, natura o gestione di un rustico. Evita qualsiasi informazione generica non pertinente. Rispondi solo con il testo del fun fact, senza titolo o virgolette.";
+const FUN_FACT_PROMPT = "Scrivi un breve fun fact (massimo 2 frasi) utile o curioso riguardante una casa in montagna. Il contenuto deve essere specifico per ambienti montani, clima freddo, neve, gelo, natura o gestione di un rustico. Evita qualsiasi informazione generica non pertinente. Rispondi solo con il testo del fun fact, senza titolo o virgolette. La risposta deve essere completa e terminare con un punto.";
+const FUN_FACT_STRICT_PROMPT = "Scrivi una sola frase completa (massimo 25 parole) utile o curiosa riguardante una casa in montagna. Il contenuto deve essere specifico per ambienti montani, clima freddo, neve, gelo, natura o gestione di un rustico. Evita qualsiasi informazione generica non pertinente. Termina con un punto.";
 
 const DEFAULT_GEMINI_MODEL = "gemini-1.5-flash-latest";
 const FALLBACK_GEMINI_MODELS = [
@@ -63,6 +64,99 @@ const fetchAvailableModels = async (apiKey) => {
   return cachedAvailableModels;
 };
 
+const sanitizeFact = (text) => {
+  const normalized = String(text || "")
+    .replace(/\s+/g, " ")
+    .replace(/^"|"$/g, "")
+    .trim();
+  if (!normalized) {
+    return "";
+  }
+  const sentences = normalized.match(/[^.!?]+[.!?]+/g);
+  if (sentences && sentences.length > 0) {
+    return sentences.slice(0, 2).join(" ").trim();
+  }
+  return normalized;
+};
+
+const isValidFact = (text) => {
+  const cleaned = sanitizeFact(text);
+  if (!cleaned || cleaned.length < 20) {
+    return false;
+  }
+  return /[.!?]$/.test(cleaned);
+};
+
+const requestFact = async (prompt, apiKey, modelName) => {
+  const modelsToTry = [
+    modelName,
+    ...FALLBACK_GEMINI_MODELS.filter((model) => model !== modelName),
+  ];
+
+  let response = null;
+  let lastError = null;
+  let triedAvailableModels = false;
+
+  for (let index = 0; index < modelsToTry.length; index += 1) {
+    const model = modelsToTry[index];
+    response = await fetch(buildGeminiUrl(model, apiKey), {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        system_instruction: {
+          parts: [{ text: "Rispondi in italiano e termina con un punto." }],
+        },
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: prompt }],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 160,
+        },
+      }),
+    });
+
+    if (response.ok) {
+      break;
+    }
+
+    const text = await response.text();
+    lastError = getGeminiError(text || "AI error");
+    if (!shouldRetryModel(lastError)) {
+      break;
+    }
+
+    if (!triedAvailableModels && index === modelsToTry.length - 1) {
+      triedAvailableModels = true;
+      const availableModels = await fetchAvailableModels(apiKey);
+      if (Array.isArray(availableModels)) {
+        for (const availableModel of availableModels) {
+          if (!modelsToTry.includes(availableModel)) {
+            modelsToTry.push(availableModel);
+          }
+        }
+      }
+    }
+  }
+
+  if (!response || !response.ok) {
+    return { text: "", error: lastError?.message || "AI error" };
+  }
+
+  const data = await response.json();
+  const rawFact = String(
+    data?.candidates?.[0]?.content?.parts?.[0]?.text ??
+      data?.promptFeedback?.blockReasonMessage ??
+      ""
+  );
+  return { text: rawFact, error: null };
+};
+
 export const onRequestPost = async ({ env }) => {
   try {
     if (!env.GEMINI_API_KEY) {
@@ -73,79 +167,24 @@ export const onRequestPost = async ({ env }) => {
     }
 
     const modelName = env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
-    const modelsToTry = [
-      modelName,
-      ...FALLBACK_GEMINI_MODELS.filter((model) => model !== modelName),
-    ];
+    const firstAttempt = await requestFact(FUN_FACT_PROMPT, env.GEMINI_API_KEY, modelName);
+    let finalFact = sanitizeFact(firstAttempt.text);
+    let finalError = firstAttempt.error;
 
-    let response = null;
-    let lastError = null;
-    let triedAvailableModels = false;
-
-    for (let index = 0; index < modelsToTry.length; index += 1) {
-      const model = modelsToTry[index];
-      response = await fetch(buildGeminiUrl(model, env.GEMINI_API_KEY), {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: "Rispondi in italiano in massimo due frasi." }],
-          },
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: FUN_FACT_PROMPT }],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: 120,
-          },
-        }),
-      });
-
-      if (response.ok) {
-        break;
-      }
-
-      const text = await response.text();
-      lastError = getGeminiError(text || "AI error");
-      if (!shouldRetryModel(lastError)) {
-        break;
-      }
-
-      if (!triedAvailableModels && index === modelsToTry.length - 1) {
-        triedAvailableModels = true;
-        const availableModels = await fetchAvailableModels(env.GEMINI_API_KEY);
-        if (Array.isArray(availableModels)) {
-          for (const availableModel of availableModels) {
-            if (!modelsToTry.includes(availableModel)) {
-              modelsToTry.push(availableModel);
-            }
-          }
-        }
-      }
+    if (!isValidFact(finalFact)) {
+      const strictAttempt = await requestFact(FUN_FACT_STRICT_PROMPT, env.GEMINI_API_KEY, modelName);
+      finalFact = sanitizeFact(strictAttempt.text);
+      finalError = strictAttempt.error;
     }
 
-    if (!response || !response.ok) {
-      return new Response(JSON.stringify({ error: lastError?.message || "AI error" }), {
+    if (!isValidFact(finalFact)) {
+      return new Response(JSON.stringify({ error: finalError || "Fun fact non disponibile" }), {
         status: 500,
         headers: { "content-type": "application/json" },
       });
     }
 
-    const data = await response.json();
-    const rawFact = String(
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ??
-        data?.promptFeedback?.blockReasonMessage ??
-        ""
-    )
-      .replace(/\s+/g, " ")
-      .trim();
-
-    return new Response(JSON.stringify({ fact: rawFact }), {
+    return new Response(JSON.stringify({ fact: finalFact }), {
       status: 200,
       headers: { "content-type": "application/json" },
     });

@@ -48,6 +48,14 @@ const getLocalDateKey = (date = new Date()) => {
   return `${year}-${month}-${day}`;
 };
 
+const isCompleteSentence = (text: string) => {
+  const trimmed = text.trim();
+  if (!trimmed || trimmed.length < 20) {
+    return false;
+  }
+  return /[.!?]$/.test(trimmed);
+};
+
 const App: React.FC = () => {
   const [automationEnabled, setAutomationEnabled] = useLocalStorage("montagna-automation", true);
   const {
@@ -187,7 +195,7 @@ const App: React.FC = () => {
   const refreshFunFact = useCallback(
     async (force = false) => {
       const todayKey = getLocalDateKey();
-      if (!force && funFactState.date === todayKey && funFactState.text) {
+      if (!force && funFactState.date === todayKey && isCompleteSentence(funFactState.text)) {
         return;
       }
       if (funFactPending) {
@@ -376,9 +384,9 @@ const App: React.FC = () => {
               })}
             </section>
 
-            <section className="mt-8 space-y-3 fade-up">
-              <div className="wood-pill">UN DATO CHE POTREBBE INTERESSARE</div>
+            <section className="mt-8 fade-up">
               <div className="wood-card p-5">
+                <div className="wood-pill mb-4">UN DATO CHE POTREBBE INTERESSARE</div>
                 <div className="flex items-start gap-3 text-amber-950">
                   <span className="text-2xl">💡</span>
                   <div>
