@@ -43,8 +43,8 @@ const App: React.FC = () => {
     energia: { border: "#4aa65f", iconBg: "rgba(210, 242, 218, 0.8)", iconBorder: "#2f7a42", iconColor: "#1f4a2d" },
     automazioni: { border: "#3b6ee8", iconBg: "rgba(206, 219, 255, 0.85)", iconBorder: "#264aad", iconColor: "#20306d" },
     telecamere: { border: "#7a6f66", iconBg: "rgba(227, 219, 212, 0.85)", iconBorder: "#584d44", iconColor: "#3b2f27" },
-    sensori: { border: "#3b9a8b", iconBg: "rgba(200, 240, 230, 0.85)", iconBorder: "#2b6f64", iconColor: "#1f4b43" },
-    notifiche: { border: "#d8a62e", iconBg: "rgba(255, 236, 191, 0.9)", iconBorder: "#a97912", iconColor: "#6a4a10" },
+    sensori: { border: "#d8a62e", iconBg: "rgba(255, 236, 191, 0.9)", iconBorder: "#a97912", iconColor: "#6a4a10" },
+    notifiche: { border: "#c23b3b", iconBg: "rgba(255, 214, 214, 0.9)", iconBorder: "#8e2424", iconColor: "#5a1414" },
   };
 
   const cards: Array<{ key: SectionKey; title: string; emoji: string; value: string; secondary?: string; tertiary?: string }> = [
@@ -78,14 +78,14 @@ const App: React.FC = () => {
       secondary: deviceDataAvailable ? "Perimetro e alert" : "N/D",
     },
     {
-      key: "sensori",
-      title: "Sensori",
-      emoji: "🛰️",
-      value: deviceDataAvailable ? `${sensorReadings.length}` : "N/D",
-      secondary: deviceDataAvailable ? "Terreno + aria" : "N/D",
+      key: "notifiche",
+      title: "Problemi",
+      emoji: "⚠️",
+      value: deviceDataAvailable && securityStatus.presenceRisk ? "Allerta" : "N/D",
+      secondary: deviceDataAvailable ? "Eventi critici" : "N/D",
     },
     {
-      key: "notifiche",
+      key: "sensori",
       title: "Notifiche",
       emoji: "🔔",
       value: deviceDataAvailable ? "OK" : "N/D",
@@ -101,7 +101,7 @@ const App: React.FC = () => {
           <div className="wood-banner">{todayLabel.toUpperCase()} · {weather.temperature.toFixed(1)}°C</div>
         </section>
 
-        <section className="mt-6 grid grid-cols-2 gap-10 fade-up">
+        <section className="mt-6 grid grid-cols-2 gap-[46px] fade-up">
           {cards.map((card) => {
             const accent = accentByKey[card.key];
             const iconStyle: React.CSSProperties = {
