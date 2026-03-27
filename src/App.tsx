@@ -85,7 +85,7 @@ const App: React.FC = () => {
           </div>
         </section>
 
-        <section className="mt-6 grid gap-10 sm:grid-cols-2 fade-up">
+        <section className="mt-6 grid grid-cols-2 gap-10 fade-up">
           {cards.map((card) => (
             <button
               key={card.key}
