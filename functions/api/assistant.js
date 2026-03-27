@@ -1,6 +1,35 @@
 const SYSTEM_PROMPT = "Sei un assistente per una dashboard di casa/terreno in montagna. Rispondi in italiano con suggerimenti pratici, chiari e brevi. Se la richiesta non riguarda la dashboard, rispondi comunque con cortesia.";
 
-const DEFAULT_GEMINI_MODEL = "gemini-1.5-flash";
+const DEFAULT_GEMINI_MODEL = "gemini-1.5-flash-latest";
+const FALLBACK_GEMINI_MODELS = ["gemini-1.5-flash-latest", "gemini-1.5-pro-latest"];
+
+const buildGeminiUrl = (modelName, apiKey) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+const getGeminiError = (text) => {
+  if (!text) {
+    return { message: "AI error", status: null };
+  }
+  try {
+    const parsed = JSON.parse(text);
+    const status = parsed?.error?.status ?? null;
+    const message = parsed?.error?.message ?? text;
+    return { message, status };
+  } catch {
+    return { message: text, status: null };
+  }
+};
+
+const shouldRetryModel = (error) => {
+  if (!error) {
+    return false;
+  }
+  if (error.status === "NOT_FOUND") {
+    return true;
+  }
+  const message = String(error.message || "").toLowerCase();
+  return message.includes("not found") || message.includes("not supported for generatecontent");
+};
 
 export const onRequestPost = async ({ request, env }) => {
   try {
@@ -22,9 +51,16 @@ export const onRequestPost = async ({ request, env }) => {
     }
 
     const modelName = env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${env.GEMINI_API_KEY}`,
-      {
+    const modelsToTry = [
+      modelName,
+      ...FALLBACK_GEMINI_MODELS.filter((model) => model !== modelName),
+    ];
+
+    let response = null;
+    let lastError = null;
+
+    for (const model of modelsToTry) {
+      response = await fetch(buildGeminiUrl(model, env.GEMINI_API_KEY), {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -42,12 +78,21 @@ export const onRequestPost = async ({ request, env }) => {
             maxOutputTokens: 400,
           },
         }),
-      }
-    );
+      });
 
-    if (!response.ok) {
+      if (response.ok) {
+        break;
+      }
+
       const text = await response.text();
-      return new Response(JSON.stringify({ error: text || "AI error" }), {
+      lastError = getGeminiError(text || "AI error");
+      if (!shouldRetryModel(lastError)) {
+        break;
+      }
+    }
+
+    if (!response || !response.ok) {
+      return new Response(JSON.stringify({ error: lastError?.message || "AI error" }), {
         status: 500,
         headers: { "content-type": "application/json" },
       });
