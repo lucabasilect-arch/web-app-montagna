@@ -1,5 +1,7 @@
 const SYSTEM_PROMPT = "Sei un assistente per una dashboard di casa/terreno in montagna. Rispondi in italiano con suggerimenti pratici, chiari e brevi. Se la richiesta non riguarda la dashboard, rispondi comunque con cortesia.";
 
+const DEFAULT_GEMINI_MODEL = "gemini-1.5-flash";
+
 export const onRequestPost = async ({ request, env }) => {
   try {
     const payload = await request.json();
@@ -12,29 +14,36 @@ export const onRequestPost = async ({ request, env }) => {
       }))
       .slice(-8);
 
-    if (!env.OPENAI_API_KEY) {
-      return new Response(JSON.stringify({ error: "OPENAI_API_KEY missing" }), {
+    if (!env.GEMINI_API_KEY) {
+      return new Response(JSON.stringify({ error: "GEMINI_API_KEY missing" }), {
         status: 500,
         headers: { "content-type": "application/json" },
       });
     }
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: env.OPENAI_MODEL || "gpt-4o-mini",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          ...normalized,
-        ],
-        temperature: 0.3,
-        max_tokens: 400,
-      }),
-    });
+    const modelName = env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          system_instruction: {
+            parts: [{ text: SYSTEM_PROMPT }],
+          },
+          contents: normalized.map((message) => ({
+            role: message.role === "assistant" ? "model" : "user",
+            parts: [{ text: message.content }],
+          })),
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 400,
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
       const text = await response.text();
@@ -45,7 +54,11 @@ export const onRequestPost = async ({ request, env }) => {
     }
 
     const data = await response.json();
-    const reply = String(data?.choices?.[0]?.message?.content ?? "Risposta non disponibile").trim();
+    const reply = String(
+      data?.candidates?.[0]?.content?.parts?.[0]?.text ??
+        data?.promptFeedback?.blockReasonMessage ??
+        "Risposta non disponibile"
+    ).trim();
 
     return new Response(JSON.stringify({ reply }), {
       status: 200,
