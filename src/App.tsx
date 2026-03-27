@@ -399,7 +399,7 @@ const App: React.FC = () => {
         automationEnabled={automationEnabled}
         onToggleAutomation={setAutomationEnabled}
       />
-      <main className="mx-auto mt-28 max-w-6xl px-5 pb-16">
+      <main className="mx-auto mt-28 max-w-5xl px-5 pb-16">
         <section className="space-y-2 fade-up">
           <p className="text-xs uppercase tracking-[0.5em] text-emerald-200">Rainforest Dashboard</p>
           <h2 className="text-3xl font-semibold text-white">Controllo terreno & casa</h2>
@@ -412,7 +412,7 @@ const App: React.FC = () => {
           </div>
         </section>
 
-        <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 fade-up">
+        <section className="mt-6 grid gap-4 md:grid-cols-2 fade-up">
           {sections.map((section) => {
             const isActive = activeSection === section.key;
             return (
@@ -424,14 +424,14 @@ const App: React.FC = () => {
               >
                 <div className="flex items-center justify-between">
                   <span className="island-emoji" aria-hidden="true">{section.emoji}</span>
-                  <span className="text-[0.65rem] uppercase tracking-[0.35em] text-emerald-200">
+                  <span className="text-[0.65rem] uppercase tracking-[0.35em] text-amber-100">
                     {isActive ? "Aperta" : "Apri"}
                   </span>
                 </div>
                 <div className="mt-5">
-                  <h3 className="text-xl font-semibold text-white">{section.title}</h3>
-                  <p className="mt-2 text-2xl font-semibold text-emerald-100">{section.summary}</p>
-                  <p className="mt-3 text-xs uppercase tracking-[0.3em] text-slate-400">{section.detail}</p>
+                  <h3 className="text-xl font-semibold text-amber-50">{section.title}</h3>
+                  <p className="mt-2 text-2xl font-semibold text-amber-100">{section.summary}</p>
+                  <p className="mt-3 text-xs uppercase tracking-[0.3em] text-amber-200/70">{section.detail}</p>
                 </div>
               </button>
             );

@@ -83,11 +83,11 @@ body::after {
 
 .island-card {
   background:
-    radial-gradient(circle at 20% 20%, rgba(79, 177, 130, 0.22), transparent 55%),
-    linear-gradient(160deg, rgba(10, 30, 20, 0.92), rgba(24, 42, 30, 0.82), rgba(58, 40, 24, 0.7));
-  border: 1px solid rgba(255, 255, 255, 0.08);
+    radial-gradient(circle at 22% 18%, rgba(255, 244, 225, 0.35), transparent 55%),
+    linear-gradient(155deg, #8b6643 0%, #b78b60 45%, #7a5534 100%);
+  border: 2px solid #4a2f1b;
   border-radius: 24px;
-  box-shadow: 0 20px 46px rgba(6, 10, 8, 0.65);
+  box-shadow: 0 20px 46px rgba(24, 14, 6, 0.55);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
@@ -97,8 +97,8 @@ body::after {
 }
 
 .island-card.is-active {
-  border-color: rgba(143, 183, 114, 0.6);
-  box-shadow: 0 28px 70px rgba(6, 10, 8, 0.8);
+  border-color: #6a3f22;
+  box-shadow: 0 28px 70px rgba(24, 14, 6, 0.7);
 }
 
 .island-emoji {
@@ -108,8 +108,8 @@ body::after {
   width: 46px;
   height: 46px;
   border-radius: 16px;
-  background: radial-gradient(circle at 30% 30%, rgba(230, 222, 207, 0.3), rgba(79, 177, 130, 0.2));
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 243, 225, 0.65), rgba(150, 112, 78, 0.35));
+  border: 1px solid rgba(74, 47, 27, 0.5);
   font-size: 1.4rem;
 }
 
