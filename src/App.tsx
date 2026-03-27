@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSimulator } from "./hooks/useSimulator";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { getWeatherLocationLabel } from "./services/weatherService";
@@ -10,6 +10,11 @@ type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   time: string;
+};
+
+type FunFactState = {
+  date: string;
+  text: string;
 };
 
 type SpeechRecognitionLike = {
@@ -34,6 +39,13 @@ const getSpeechRecognitionConstructor = () => {
     webkitSpeechRecognition?: SpeechRecognitionConstructor;
   };
   return typedWindow.SpeechRecognition || typedWindow.webkitSpeechRecognition || null;
+};
+
+const getLocalDateKey = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
 const App: React.FC = () => {
@@ -67,6 +79,12 @@ const App: React.FC = () => {
   const [chatPending, setChatPending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const [chatListening, setChatListening] = useState(false);
+  const [funFactState, setFunFactState] = useLocalStorage<FunFactState>("montagna-fun-fact", {
+    date: "",
+    text: "",
+  });
+  const [funFactPending, setFunFactPending] = useState(false);
+  const [funFactError, setFunFactError] = useState<string | null>(null);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
@@ -165,6 +183,65 @@ const App: React.FC = () => {
     }
     return raw || fallback;
   };
+
+  const refreshFunFact = useCallback(
+    async (force = false) => {
+      const todayKey = getLocalDateKey();
+      if (!force && funFactState.date === todayKey && funFactState.text) {
+        return;
+      }
+      if (funFactPending) {
+        return;
+      }
+      setFunFactPending(true);
+      setFunFactError(null);
+      try {
+        const response = await fetch("/api/fun-fact", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || "Errore fun fact");
+        }
+
+        const data = await response.json();
+        const rawFact = String(data?.fact ?? data?.reply ?? "").replace(/\s+/g, " ").trim();
+        const cleanedFact = rawFact.replace(/^"|"$/g, "");
+        if (!cleanedFact) {
+          throw new Error("Fun fact non disponibile");
+        }
+        setFunFactState({ date: todayKey, text: cleanedFact });
+      } catch (error) {
+        const errorMessage = normalizeAiError(error);
+        setFunFactError(errorMessage);
+      } finally {
+        setFunFactPending(false);
+      }
+    },
+    [funFactPending, funFactState.date, funFactState.text, setFunFactState]
+  );
+
+  useEffect(() => {
+    refreshFunFact(false);
+  }, [refreshFunFact]);
+
+  useEffect(() => {
+    let timeoutId = 0;
+    const scheduleRefresh = () => {
+      const now = new Date();
+      const nextMidnight = new Date(now);
+      nextMidnight.setHours(24, 0, 0, 0);
+      const delay = nextMidnight.getTime() - now.getTime();
+      timeoutId = window.setTimeout(async () => {
+        await refreshFunFact(true);
+        scheduleRefresh();
+      }, delay);
+    };
+    scheduleRefresh();
+    return () => window.clearTimeout(timeoutId);
+  }, [refreshFunFact]);
 
   const handleSendMessage = async (event?: React.FormEvent) => {
     event?.preventDefault();
@@ -299,8 +376,23 @@ const App: React.FC = () => {
               })}
             </section>
 
-            <section className="mt-8 fade-up">
+            <section className="mt-8 space-y-3 fade-up">
               <div className="wood-pill">UN DATO CHE POTREBBE INTERESSARE</div>
+              <div className="wood-card p-5">
+                <div className="flex items-start gap-3 text-amber-950">
+                  <span className="text-2xl">💡</span>
+                  <div>
+                    <p key={`${funFactState.date}-${funFactState.text.slice(0, 12)}`} className="fun-fact-text fade-up">
+                      {funFactPending && !funFactState.text
+                        ? "Sto preparando il dato di oggi..."
+                        : funFactState.text || "Nessun dato disponibile."}
+                    </p>
+                    {funFactError && !funFactPending && (
+                      <p className="mt-2 text-xs text-amber-900/60">Aggiornamento non riuscito.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
             </section>
           </>
         ) : (
@@ -335,13 +427,15 @@ const App: React.FC = () => {
                   type="button"
                   onClick={handleVoiceInput}
                   disabled={chatPending}
-                  className={`flex h-8 w-8 items-center justify-center rounded-full border border-amber-900/20 text-base ${
-                    chatListening ? "bg-amber-300/90" : "bg-amber-100/70"
+                  className={`voice-button flex h-8 w-8 items-center justify-center rounded-full border border-amber-900/20 text-base ${
+                    chatListening ? "bg-amber-300/90 voice-button--listening" : "bg-amber-100/70"
                   } text-amber-900 disabled:opacity-60`}
                   aria-label={chatListening ? "Interrompi dettatura" : "Dettatura vocale"}
+                  aria-pressed={chatListening}
                 >
                   {chatListening ? "⏺️" : "🎙️"}
                 </button>
+                {chatListening && <span className="voice-rec">REC</span>}
                 <button
                   type="submit"
                   disabled={chatPending}

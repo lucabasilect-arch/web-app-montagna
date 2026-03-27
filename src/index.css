@@ -185,6 +185,23 @@ body::after {
   opacity: 0.6;
 }
 
+.fun-fact-text {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.voice-button--listening {
+  animation: pulse 1.4s ease-in-out infinite;
+  box-shadow: 0 0 0 0 rgba(139, 69, 19, 0.35);
+}
+
+.voice-rec {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: rgba(139, 69, 19, 0.85);
+}
+
 .fade-up {
   animation: fade-up 0.7s ease both;
 }
@@ -218,6 +235,18 @@ body::after {
   }
   50% {
     transform: translateY(-12px);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(139, 69, 19, 0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(139, 69, 19, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(139, 69, 19, 0);
   }
 }
 
