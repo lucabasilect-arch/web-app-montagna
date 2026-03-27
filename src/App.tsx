@@ -79,10 +79,6 @@ const App: React.FC = () => {
       <main className="mx-auto mt-12 max-w-4xl px-5 pb-16">
         <section className="space-y-4 fade-up">
           <div className="wood-banner">{todayLabel.toUpperCase()} · {weather.temperature.toFixed(1)}°C</div>
-          <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.3em] text-emerald-100">
-            <span className="inline-flex h-2 w-2 rounded-full bg-emerald-300" />
-            {todayLabel} · {getWeatherLocationLabel()}
-          </div>
         </section>
 
         <section className="mt-6 grid grid-cols-2 gap-10 fade-up">
