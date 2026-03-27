@@ -13,7 +13,7 @@ import {
   createSensorReadings,
   randomWeather,
 } from "../services/mockData";
-import { fetchWeatherAverage, getWeatherLocationLabel } from "../services/weatherService";
+import { fetchWeatherAverage, getWeatherLocationLabel, WeatherForecast } from "../services/weatherService";
 
 type Notification = {
   id: string;
@@ -34,6 +34,7 @@ export const useSimulator = ({ automationEnabled }: SimulatorOptions) => {
   const [cameraAlerts, setCameraAlerts] = useState<CameraAlert[]>(() => [createCameraAlert(0)]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [weatherSources, setWeatherSources] = useState<string[]>(["In caricamento"]);
+  const [weatherForecast, setWeatherForecast] = useState<WeatherForecast>({ days: [] });
   const [weatherUpdatedAt, setWeatherUpdatedAt] = useState<string>(
     new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
   );
@@ -73,12 +74,13 @@ export const useSimulator = ({ automationEnabled }: SimulatorOptions) => {
     let active = true;
     const loadWeather = async () => {
       try {
-        const { reading, sources } = await fetchWeatherAverage();
+        const { reading, sources, forecast } = await fetchWeatherAverage();
         if (!active) {
           return;
         }
         setWeather(reading);
         setWeatherSources(sources);
+        setWeatherForecast(forecast);
         setWeatherUpdatedAt(new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }));
         if (weatherErrorNotified) {
           setWeatherErrorNotified(false);
@@ -93,6 +95,7 @@ export const useSimulator = ({ automationEnabled }: SimulatorOptions) => {
         }
         setWeather(randomWeather());
         setWeatherSources(["Fallback locale"]);
+        setWeatherForecast({ days: [] });
         setWeatherUpdatedAt(new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }));
       }
     };
@@ -249,6 +252,7 @@ export const useSimulator = ({ automationEnabled }: SimulatorOptions) => {
     securityStatus,
     soilReading,
     weatherSources,
+    weatherForecast,
     weatherUpdatedAt,
     togglePlug,
     triggerIrrigation,

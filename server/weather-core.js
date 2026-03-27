@@ -32,12 +32,49 @@ const estimateRainProbability = (humidity, conditionText) => {
   return clamp(humidity * 0.4, 15, 55);
 };
 
+const buildForecast = (data) => {
+  const daily = data?.daily ?? {};
+  const hourly = data?.hourly ?? {};
+  const hoursByDay = {};
+  const hourlyTimes = hourly.time ?? [];
+
+  for (let i = 0; i < hourlyTimes.length; i += 1) {
+    const timestamp = String(hourlyTimes[i] ?? "");
+    if (!timestamp) {
+      continue;
+    }
+    const dayKey = timestamp.split("T")[0];
+    if (!hoursByDay[dayKey]) {
+      hoursByDay[dayKey] = [];
+    }
+    hoursByDay[dayKey].push({
+      time: timestamp,
+      temperature: adjustTemperature(Number(hourly.temperature_2m?.[i] ?? 0)),
+      rainProbability: clamp(Number(hourly.precipitation_probability?.[i] ?? 0), 0, 100),
+      condition: weatherCodeLabel(Number(hourly.weather_code?.[i] ?? 1)),
+    });
+  }
+
+  const dailyTimes = daily.time ?? [];
+  const days = dailyTimes.map((day, index) => ({
+    date: String(day),
+    min: adjustTemperature(Number(daily.temperature_2m_min?.[index] ?? 0)),
+    max: adjustTemperature(Number(daily.temperature_2m_max?.[index] ?? 0)),
+    rainProbability: clamp(Number(daily.precipitation_probability_max?.[index] ?? 0), 0, 100),
+    condition: weatherCodeLabel(Number(daily.weather_code?.[index] ?? 1)),
+    hours: hoursByDay[String(day)] ?? [],
+  }));
+
+  return { days };
+};
+
 const fetchOpenMeteo = async () => {
   const url = new URL("https://api.open-meteo.com/v1/forecast");
   url.searchParams.set("latitude", String(LOCATION.latitude));
   url.searchParams.set("longitude", String(LOCATION.longitude));
   url.searchParams.set("current", "temperature_2m,relative_humidity_2m,weather_code");
-  url.searchParams.set("hourly", "precipitation_probability");
+  url.searchParams.set("hourly", "temperature_2m,precipitation_probability,weather_code");
+  url.searchParams.set("daily", "temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code");
   url.searchParams.set("timezone", "Europe/Rome");
 
   const response = await fetch(url.toString());
@@ -49,6 +86,7 @@ const fetchOpenMeteo = async () => {
     humidity: Number(data.current?.relative_humidity_2m ?? 0),
     rainProbability: clamp(Number(data.hourly?.precipitation_probability?.[0] ?? 0), 0, 100),
     condition: weatherCodeLabel(Number(data.current?.weather_code ?? 1)),
+    forecast: buildForecast(data),
   };
 };
 
@@ -99,8 +137,9 @@ const fetchOpenWeather = async (openWeatherKey) => {
 const average = (values) => values.reduce((sum, value) => sum + value, 0) / values.length;
 
 export const aggregateWeather = async ({ weatherApiKey, openWeatherKey }) => {
+  const openMeteo = await fetchOpenMeteo();
   const results = (await Promise.all([
-    fetchOpenMeteo(),
+    Promise.resolve(openMeteo),
     fetchWeatherApi(weatherApiKey),
     fetchOpenWeather(openWeatherKey),
   ])).filter(Boolean);
@@ -117,6 +156,7 @@ export const aggregateWeather = async ({ weatherApiKey, openWeatherKey }) => {
       condition: results.slice().sort((a, b) => b.rainProbability - a.rainProbability)[0].condition,
     },
     sources: results.map((item) => item.source),
+    forecast: openMeteo?.forecast ?? { days: [] },
     location: LOCATION.name,
     updatedAt: new Date().toISOString(),
   };

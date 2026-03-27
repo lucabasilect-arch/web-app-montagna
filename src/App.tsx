@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Navigation from "./components/Navigation";
 import OverviewCard from "./components/OverviewCard";
 import HistoryList from "./components/HistoryList";
@@ -25,6 +25,7 @@ const App: React.FC = () => {
     soilReading,
     weatherSources,
     weatherUpdatedAt,
+    weatherForecast,
     togglePlug,
     triggerIrrigation,
     sendRobotCommand,
@@ -40,6 +41,12 @@ const App: React.FC = () => {
   const energyValueLabel = deviceDataAvailable ? `${totalPowerKw.toFixed(2)} kW` : "N/D";
   const energyHint = deviceDataAvailable ? `${energySummary.activePlugs} prese ON` : "In attesa API";
   const deviceActionsDisabled = !deviceDataAvailable;
+  const forecastDays = weatherForecast.days ?? [];
+  const todayForecast = forecastDays[0];
+  const todaySummary = todayForecast
+    ? `Oggi ${Math.round(todayForecast.max)}° / ${Math.round(todayForecast.min)}°`
+    : `${weather.temperature.toFixed(1)} °C`;
+  const todayDetail = todayForecast?.condition ?? weather.condition;
 
   const automationItems = deviceDataAvailable
     ? automationRules.map((rule) => ({
@@ -101,17 +108,24 @@ const App: React.FC = () => {
       ];
 
   const [activeSection, setActiveSection] = useState<SectionKey | null>("meteo");
+  const [activeForecastDay, setActiveForecastDay] = useState(0);
   const handleSelectSection = (key: SectionKey) => {
     setActiveSection((prev) => (prev === key ? null : key));
   };
+
+  useEffect(() => {
+    if (activeForecastDay >= forecastDays.length) {
+      setActiveForecastDay(0);
+    }
+  }, [activeForecastDay, forecastDays.length]);
 
   const sections: Array<{ key: SectionKey; title: string; emoji: string; summary: string; detail: string }> = [
     {
       key: "meteo",
       title: "Meteo",
       emoji: "🌧️",
-      summary: `${weather.temperature.toFixed(1)} °C`,
-      detail: weather.condition,
+      summary: todaySummary,
+      detail: todayDetail,
     },
     {
       key: "energia",
@@ -150,6 +164,27 @@ const App: React.FC = () => {
     },
   ];
 
+  const selectedForecast = forecastDays[activeForecastDay];
+  const hourlyFocus = useMemo(() => {
+    if (!selectedForecast?.hours?.length) {
+      return [];
+    }
+    return selectedForecast.hours.filter((_, index) => index % 2 === 0).slice(0, 24);
+  }, [selectedForecast]);
+
+  const formatDayLabel = (date: string) =>
+    new Date(`${date}T00:00:00`).toLocaleDateString("it-IT", {
+      weekday: "short",
+      day: "2-digit",
+      month: "short",
+    });
+
+  const formatHourLabel = (time: string) =>
+    new Date(time).toLocaleTimeString("it-IT", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
   const contentByKey: Record<SectionKey, React.ReactNode> = {
     meteo: (
       <div className="grid gap-4 md:grid-cols-2">
@@ -167,6 +202,60 @@ const App: React.FC = () => {
             <p>Fonte: {weatherSources.join(" + ")}</p>
             <p className="mt-1 text-slate-300">Altitudine corretta +600m</p>
           </div>
+        </div>
+        <div className="card-glow rounded-2xl p-5 md:col-span-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm uppercase tracking-[0.35em] text-emerald-200">Previsioni 7 giorni</h3>
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Dettaglio orario</p>
+          </div>
+          <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
+            {forecastDays.length === 0 && (
+              <p className="text-xs text-slate-400">Previsioni non disponibili al momento.</p>
+            )}
+            {forecastDays.map((day, index) => {
+              const isActive = index === activeForecastDay;
+              return (
+                <button
+                  key={day.date}
+                  type="button"
+                  onClick={() => setActiveForecastDay(index)}
+                  className={`rounded-2xl border px-3 py-3 text-left text-xs transition ${
+                    isActive
+                      ? "border-emerald-300/80 bg-emerald-500/10 text-emerald-100"
+                      : "border-white/10 bg-white/5 text-slate-200"
+                  }`}
+                >
+                  <p className="text-[0.65rem] uppercase tracking-[0.3em]">{formatDayLabel(day.date)}</p>
+                  <p className="mt-2 text-sm font-semibold">{day.condition}</p>
+                  <p className="mt-2 text-base">{Math.round(day.max)}° / {Math.round(day.min)}°</p>
+                  <p className="text-[0.65rem] text-slate-300">Pioggia {Math.round(day.rainProbability)}%</p>
+                </button>
+              );
+            })}
+          </div>
+          {selectedForecast && (
+            <div className="mt-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                Ore del giorno selezionato
+              </p>
+              <div className="mt-2 flex gap-3 overflow-x-auto pb-2">
+                {hourlyFocus.length === 0 && (
+                  <p className="text-xs text-slate-400">Nessun dettaglio orario disponibile.</p>
+                )}
+                {hourlyFocus.map((hour) => (
+                  <div
+                    key={hour.time}
+                    className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-200"
+                  >
+                    <p className="text-[0.65rem] uppercase tracking-[0.3em]">{formatHourLabel(hour.time)}</p>
+                    <p className="mt-1 text-base text-white">{Math.round(hour.temperature)}°</p>
+                    <p className="text-[0.65rem] text-amber-200">Pioggia {Math.round(hour.rainProbability)}%</p>
+                    <p className="text-[0.65rem] text-slate-300">{hour.condition}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     ),
