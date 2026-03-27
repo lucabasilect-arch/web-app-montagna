@@ -1,5 +1,4 @@
 import React, { useMemo } from "react";
-import Navigation from "./components/Navigation";
 import { useSimulator } from "./hooks/useSimulator";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { getWeatherLocationLabel } from "./services/weatherService";
@@ -77,11 +76,7 @@ const App: React.FC = () => {
 
   return (
     <div className="relative min-h-screen pb-16">
-      <Navigation
-        automationEnabled={automationEnabled}
-        onToggleAutomation={setAutomationEnabled}
-      />
-      <main className="mx-auto mt-24 max-w-4xl px-5 pb-16">
+      <main className="mx-auto mt-12 max-w-4xl px-5 pb-16">
         <section className="space-y-4 fade-up">
           <div className="wood-banner">{todayLabel.toUpperCase()} · {weather.temperature.toFixed(1)}°C</div>
           <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.3em] text-emerald-100">
