@@ -220,7 +220,7 @@ const App: React.FC = () => {
           </>
         ) : (
           <section className="space-y-4 fade-up">
-            <div className="wood-banner">ASSISTENTE AI</div>
+            <div className="wood-banner">ASSISTENTE IA</div>
             <div className="wood-card p-5">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-amber-950">Chat operativa</h3>
@@ -229,13 +229,9 @@ const App: React.FC = () => {
               <div className="mt-4 max-h-[50vh] space-y-3 overflow-y-auto pr-1">
                 {chatMessages.map((message, index) => (
                   <div key={`${message.role}-${index}`} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
-                      message.role === "user"
-                        ? "bg-amber-100 text-amber-950"
-                        : "bg-white/80 text-amber-950"
-                    }`}>
+                    <div className={`chat-bubble ${message.role === "user" ? "chat-bubble--user" : "chat-bubble--assistant"}`}>
                       <p>{message.content}</p>
-                      <span className="mt-1 block text-[0.65rem] opacity-60">{message.time}</span>
+                      <span className="chat-time">{message.time}</span>
                     </div>
                   </div>
                 ))}
@@ -247,7 +243,7 @@ const App: React.FC = () => {
                 value={chatInput}
                 onChange={(event) => setChatInput(event.target.value)}
                 placeholder="Scrivi una domanda..."
-                className="flex-1 rounded-xl border border-amber-900/30 bg-white/80 px-3 py-2 text-sm text-amber-950 placeholder-amber-900/50"
+                className="flex-1 h-11 rounded-xl border border-amber-900/30 bg-white/80 px-3 text-sm text-amber-950 placeholder-amber-900/50"
               />
               <button
                 type="submit"
@@ -275,7 +271,7 @@ const App: React.FC = () => {
           className={`bottom-nav__item ${activeTab === "ai" ? "is-active" : ""}`}
           onClick={() => setActiveTab("ai")}
         >
-          🤖 AI
+          🤖 IA
         </button>
       </nav>
     </div>
