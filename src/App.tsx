@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSimulator } from "./hooks/useSimulator";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { getWeatherLocationLabel } from "./services/weatherService";
@@ -67,6 +67,8 @@ const App: React.FC = () => {
   const [chatPending, setChatPending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const [chatListening, setChatListening] = useState(false);
+  const chatScrollRef = useRef<HTMLDivElement | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
@@ -140,6 +142,13 @@ const App: React.FC = () => {
     },
   ];
 
+  useEffect(() => {
+    if (!chatScrollRef.current) {
+      return;
+    }
+    chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+  }, [chatMessages, chatPending]);
+
   const normalizeAiError = (error: unknown) => {
     const fallback = "Errore AI";
     if (!error) {
@@ -204,6 +213,7 @@ const App: React.FC = () => {
 
   const handleVoiceInput = () => {
     if (chatListening) {
+      recognitionRef.current?.stop();
       return;
     }
     const Recognition = getSpeechRecognitionConstructor();
@@ -212,6 +222,7 @@ const App: React.FC = () => {
       return;
     }
     const recognition = new Recognition();
+    recognitionRef.current = recognition;
     recognition.lang = "it-IT";
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
@@ -226,6 +237,7 @@ const App: React.FC = () => {
     };
     recognition.onend = () => {
       setChatListening(false);
+      recognitionRef.current = null;
     };
     setChatError(null);
     setChatListening(true);
@@ -299,7 +311,7 @@ const App: React.FC = () => {
                 <h3 className="text-lg font-bold text-amber-950">Chat operativa</h3>
                 <span className="wood-icon" aria-hidden="true">🤖</span>
               </div>
-              <div className="mt-4 max-h-[50vh] space-y-3 overflow-y-auto pr-1">
+              <div ref={chatScrollRef} className="mt-4 max-h-[50vh] space-y-3 overflow-y-auto pr-1">
                 {chatMessages.map((message, index) => (
                   <div key={`${message.role}-${index}`} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                     <div className={`chat-bubble ${message.role === "user" ? "chat-bubble--user" : "chat-bubble--assistant"}`}>
@@ -310,32 +322,34 @@ const App: React.FC = () => {
                 ))}
               </div>
             </div>
-            <form className="wood-card flex items-center gap-3 p-4" onSubmit={handleSendMessage}>
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(event) => setChatInput(event.target.value)}
-                placeholder="Scrivi una domanda..."
-                className="min-w-0 flex-1 h-[44px] rounded-xl border border-amber-900/30 bg-white/80 px-3 text-sm text-amber-950 placeholder-amber-900/50"
-              />
-              <button
-                type="button"
-                onClick={handleVoiceInput}
-                disabled={chatPending || chatListening}
-                className={`flex h-[44px] w-[44px] items-center justify-center rounded-xl border border-amber-900/30 text-lg ${
-                  chatListening ? "bg-amber-200/90" : "bg-white/80"
-                } shrink-0 text-amber-900 disabled:opacity-60`}
-                aria-label="Dettatura vocale"
-              >
-                🎙️
-              </button>
-              <button
-                type="submit"
-                disabled={chatPending}
-                className="h-[44px] shrink-0 rounded-xl bg-amber-800 px-4 text-xs font-semibold uppercase tracking-wider text-white disabled:opacity-60"
-              >
-                {chatPending ? "Attendi" : "Invia"}
-              </button>
+            <form className="wood-card p-3" onSubmit={handleSendMessage}>
+              <div className="flex h-[44px] items-center gap-2 rounded-2xl border border-amber-900/30 bg-white/80 px-3">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(event) => setChatInput(event.target.value)}
+                  placeholder="Scrivi una domanda..."
+                  className="min-w-0 flex-1 bg-transparent text-sm text-amber-950 placeholder-amber-900/50 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleVoiceInput}
+                  disabled={chatPending}
+                  className={`flex h-8 w-8 items-center justify-center rounded-full border border-amber-900/20 text-base ${
+                    chatListening ? "bg-amber-300/90" : "bg-amber-100/70"
+                  } text-amber-900 disabled:opacity-60`}
+                  aria-label={chatListening ? "Interrompi dettatura" : "Dettatura vocale"}
+                >
+                  {chatListening ? "⏺️" : "🎙️"}
+                </button>
+                <button
+                  type="submit"
+                  disabled={chatPending}
+                  className="h-8 shrink-0 rounded-full bg-amber-800 px-4 text-[0.65rem] font-semibold uppercase tracking-wider text-white disabled:opacity-60"
+                >
+                  {chatPending ? "Attendi" : "Invia"}
+                </button>
+              </div>
             </form>
             {chatError && <p className="text-xs text-red-100">{chatError}</p>}
           </section>
