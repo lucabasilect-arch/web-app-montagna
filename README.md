@@ -2,6 +2,11 @@
 
 Un prototipo mobile-first di web app per monitorare e automatizzare la casa e il terreno in montagna. L'app vive su Vite + React + Tailwind e simula tutti i dispositivi per essere scalabile quando arriveranno gli hardware reali.
 
+**Live su:**
+- GitHub Pages: https://lucabasilect-arch.github.io/web-app-montagna/
+- GitLab Pages: https://lucabasile.ct-group.gitlab.io/lucabasile.ct-project/
+- Cloudflare Pages: https://web-app-montagna.pages.dev/
+
 ## Architettura del progetto
 
 - **Root statico**: `index.html` carica `src/main.tsx` e crea il punto di ingresso React.
