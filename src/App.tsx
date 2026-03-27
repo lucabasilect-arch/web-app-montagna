@@ -12,6 +12,30 @@ type ChatMessage = {
   time: string;
 };
 
+type SpeechRecognitionLike = {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onresult: ((event: { results: ArrayLike<{ 0: { transcript: string } }> }) => void) | null;
+  onerror: ((event: { error?: string }) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+const getSpeechRecognitionConstructor = () => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  const typedWindow = window as typeof window & {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  };
+  return typedWindow.SpeechRecognition || typedWindow.webkitSpeechRecognition || null;
+};
+
 const App: React.FC = () => {
   const [automationEnabled, setAutomationEnabled] = useLocalStorage("montagna-automation", true);
   const {
@@ -42,6 +66,7 @@ const App: React.FC = () => {
   const [chatInput, setChatInput] = useState("");
   const [chatPending, setChatPending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
+  const [chatListening, setChatListening] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
@@ -115,6 +140,23 @@ const App: React.FC = () => {
     },
   ];
 
+  const normalizeAiError = (error: unknown) => {
+    const fallback = "Errore AI";
+    if (!error) {
+      return fallback;
+    }
+    const raw = error instanceof Error ? error.message : String(error);
+    try {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed?.error === "string" && parsed.error.trim()) {
+        return parsed.error;
+      }
+    } catch {
+      // Keep raw message when it's not JSON.
+    }
+    return raw || fallback;
+  };
+
   const handleSendMessage = async (event?: React.FormEvent) => {
     event?.preventDefault();
     const trimmed = chatInput.trim();
@@ -149,7 +191,8 @@ const App: React.FC = () => {
       const reply = String(data?.reply ?? "Risposta non disponibile");
       setChatMessages((prev) => [...prev, { role: "assistant", content: reply, time: formatTime() }]);
     } catch (error) {
-      setChatError("Assistente non disponibile: controlla le chiavi AI su Cloudflare.");
+      const errorMessage = normalizeAiError(error);
+      setChatError(`Assistente non disponibile: ${errorMessage}`);
       setChatMessages((prev) => [
         ...prev,
         { role: "assistant", content: "Non riesco a rispondere ora. Riprova tra poco.", time: formatTime() },
@@ -157,6 +200,36 @@ const App: React.FC = () => {
     } finally {
       setChatPending(false);
     }
+  };
+
+  const handleVoiceInput = () => {
+    if (chatListening) {
+      return;
+    }
+    const Recognition = getSpeechRecognitionConstructor();
+    if (!Recognition) {
+      setChatError("Dettatura vocale non disponibile su questo dispositivo.");
+      return;
+    }
+    const recognition = new Recognition();
+    recognition.lang = "it-IT";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onresult = (event) => {
+      const transcript = event.results?.[0]?.[0]?.transcript;
+      if (transcript) {
+        setChatInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
+      }
+    };
+    recognition.onerror = () => {
+      setChatError("Errore durante la dettatura vocale.");
+    };
+    recognition.onend = () => {
+      setChatListening(false);
+    };
+    setChatError(null);
+    setChatListening(true);
+    recognition.start();
   };
 
 
@@ -243,12 +316,23 @@ const App: React.FC = () => {
                 value={chatInput}
                 onChange={(event) => setChatInput(event.target.value)}
                 placeholder="Scrivi una domanda..."
-                className="flex-1 h-11 rounded-xl border border-amber-900/30 bg-white/80 px-3 text-sm text-amber-950 placeholder-amber-900/50"
+                className="flex-1 h-[50px] rounded-xl border border-amber-900/30 bg-white/80 px-3 text-sm text-amber-950 placeholder-amber-900/50"
               />
+              <button
+                type="button"
+                onClick={handleVoiceInput}
+                disabled={chatPending || chatListening}
+                className={`flex h-[50px] w-[50px] items-center justify-center rounded-xl border border-amber-900/30 text-lg ${
+                  chatListening ? "bg-amber-200/90" : "bg-white/80"
+                } text-amber-900 disabled:opacity-60`}
+                aria-label="Dettatura vocale"
+              >
+                🎙️
+              </button>
               <button
                 type="submit"
                 disabled={chatPending}
-                className="rounded-xl bg-amber-800 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white disabled:opacity-60"
+                className="h-[50px] rounded-xl bg-amber-800 px-4 text-xs font-semibold uppercase tracking-wider text-white disabled:opacity-60"
               >
                 {chatPending ? "Attendi" : "Invia"}
               </button>
