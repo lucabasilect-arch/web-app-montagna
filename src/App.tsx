@@ -310,21 +310,21 @@ const App: React.FC = () => {
                 ))}
               </div>
             </div>
-            <form className="wood-card flex flex-wrap items-center gap-3 p-4" onSubmit={handleSendMessage}>
+            <form className="wood-card flex items-center gap-3 p-4" onSubmit={handleSendMessage}>
               <input
                 type="text"
                 value={chatInput}
                 onChange={(event) => setChatInput(event.target.value)}
                 placeholder="Scrivi una domanda..."
-                className="flex-1 h-[50px] rounded-xl border border-amber-900/30 bg-white/80 px-3 text-sm text-amber-950 placeholder-amber-900/50"
+                className="min-w-0 flex-1 h-[44px] rounded-xl border border-amber-900/30 bg-white/80 px-3 text-sm text-amber-950 placeholder-amber-900/50"
               />
               <button
                 type="button"
                 onClick={handleVoiceInput}
                 disabled={chatPending || chatListening}
-                className={`flex h-[50px] w-[50px] items-center justify-center rounded-xl border border-amber-900/30 text-lg ${
+                className={`flex h-[44px] w-[44px] items-center justify-center rounded-xl border border-amber-900/30 text-lg ${
                   chatListening ? "bg-amber-200/90" : "bg-white/80"
-                } text-amber-900 disabled:opacity-60`}
+                } shrink-0 text-amber-900 disabled:opacity-60`}
                 aria-label="Dettatura vocale"
               >
                 🎙️
@@ -332,7 +332,7 @@ const App: React.FC = () => {
               <button
                 type="submit"
                 disabled={chatPending}
-                className="h-[50px] rounded-xl bg-amber-800 px-4 text-xs font-semibold uppercase tracking-wider text-white disabled:opacity-60"
+                className="h-[44px] shrink-0 rounded-xl bg-amber-800 px-4 text-xs font-semibold uppercase tracking-wider text-white disabled:opacity-60"
               >
                 {chatPending ? "Attendi" : "Invia"}
               </button>
