@@ -6,6 +6,16 @@
 
 :root {
   font-family: "Manrope", "Space Grotesk", sans-serif;
+  color-scheme: dark;
+  --forest-950: #07120a;
+  --forest-900: #0b1b11;
+  --forest-800: #13271a;
+  --jade-500: #2f9c6b;
+  --jade-400: #4bb382;
+  --moss-400: #8fb772;
+  --soil-700: #3a2a1b;
+  --bark-600: #5a3d27;
+  --sand-100: #e6decf;
 }
 
 h1,
@@ -18,10 +28,10 @@ h4 {
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 20% 10%, rgba(71, 162, 255, 0.25), transparent 45%),
-    radial-gradient(circle at 80% 0%, rgba(34, 197, 156, 0.15), transparent 40%),
-    radial-gradient(circle at 50% 80%, rgba(14, 165, 233, 0.12), transparent 55%),
-    #07141b;
+    radial-gradient(circle at 15% 12%, rgba(47, 156, 107, 0.28), transparent 45%),
+    radial-gradient(circle at 85% 18%, rgba(90, 61, 39, 0.24), transparent 50%),
+    radial-gradient(circle at 52% 88%, rgba(19, 80, 54, 0.3), transparent 55%),
+    linear-gradient(135deg, #07120a 0%, #0b1b11 50%, #1a120a 100%);
   color: white;
   position: relative;
   overflow-x: hidden;
@@ -34,7 +44,7 @@ body::after {
   width: 260px;
   height: 260px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.25), transparent 70%);
+  background: radial-gradient(circle, rgba(47, 156, 107, 0.35), transparent 70%);
   filter: blur(10px);
   opacity: 0.7;
   z-index: 0;
@@ -50,6 +60,7 @@ body::before {
 body::after {
   bottom: 10%;
   left: -80px;
+  background: radial-gradient(circle, rgba(90, 61, 39, 0.35), transparent 70%);
   animation-delay: 4s;
 }
 
@@ -60,9 +71,54 @@ body::after {
 }
 
 .card-glow {
-  background: linear-gradient(135deg, rgba(12, 74, 110, 0.65), rgba(16, 185, 129, 0.2));
+  background: linear-gradient(135deg, rgba(10, 32, 22, 0.82), rgba(58, 40, 24, 0.55));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 18px 45px rgba(6, 10, 8, 0.6);
+}
+
+.forest-header {
+  background: linear-gradient(135deg, rgba(10, 28, 18, 0.92), rgba(16, 34, 24, 0.9), rgba(42, 26, 15, 0.92));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.island-card {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(79, 177, 130, 0.22), transparent 55%),
+    linear-gradient(160deg, rgba(10, 30, 20, 0.92), rgba(24, 42, 30, 0.82), rgba(58, 40, 24, 0.7));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  box-shadow: 0 20px 46px rgba(6, 10, 8, 0.65);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.island-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 28px 60px rgba(6, 10, 8, 0.75);
+}
+
+.island-card.is-active {
+  border-color: rgba(143, 183, 114, 0.6);
+  box-shadow: 0 28px 70px rgba(6, 10, 8, 0.8);
+}
+
+.island-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  background: radial-gradient(circle at 30% 30%, rgba(230, 222, 207, 0.3), rgba(79, 177, 130, 0.2));
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 18px 45px rgba(4, 8, 12, 0.55);
+  font-size: 1.4rem;
+}
+
+.expando-panel {
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(140deg, rgba(9, 24, 15, 0.95), rgba(18, 36, 26, 0.92), rgba(50, 34, 20, 0.88));
+  box-shadow: 0 26px 70px rgba(5, 9, 7, 0.75);
+  animation: grow-in 0.35s ease both;
 }
 
 .fade-up {
@@ -77,6 +133,17 @@ body::after {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes grow-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
