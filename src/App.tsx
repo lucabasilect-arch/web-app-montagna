@@ -345,8 +345,8 @@ const App: React.FC = () => {
 
 
   return (
-    <div className="relative min-h-screen pb-28">
-      <main className="mx-auto mt-12 max-w-5xl px-5 pb-16">
+    <div className="relative min-h-screen pb-40">
+      <main className="mx-auto mt-12 max-w-5xl px-5 pb-20">
         {activeTab === "home" ? (
           <>
             <section className="space-y-4 fade-up">
