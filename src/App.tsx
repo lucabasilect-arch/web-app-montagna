@@ -41,11 +41,26 @@ const getSpeechRecognitionConstructor = () => {
   return typedWindow.SpeechRecognition || typedWindow.webkitSpeechRecognition || null;
 };
 
+const fallbackFacts = [
+  "In inverno, tieni le tubazioni isolate: il gelo puo bloccare l'acqua in poche ore.",
+  "Dopo una nevicata, libera il tetto a falde: il peso della neve bagnata cresce rapidamente.",
+  "Una stufa a legna ben tirata riduce condensa e muffa nei locali chiusi di montagna.",
+  "Piccole prese d'aria nei locali tecnici evitano accumuli di umidita e gelo.",
+  "Le batterie dei sensori calano con il freddo: controllale prima dei periodi di gelo.",
+  "Il sale antigelo e utile sui vialetti, ma evita di usarlo vicino a piante delicate.",
+];
+
 const getLocalDateKey = (date = new Date()) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+};
+
+const getFallbackFact = (dateKey: string) => {
+  const numeric = Number(dateKey.replace(/-/g, ""));
+  const index = Number.isNaN(numeric) ? 0 : numeric % fallbackFacts.length;
+  return fallbackFacts[index];
 };
 
 const isCompleteSentence = (text: string) => {
@@ -195,6 +210,7 @@ const App: React.FC = () => {
   const refreshFunFact = useCallback(
     async (force = false) => {
       const todayKey = getLocalDateKey();
+      const fallbackFact = getFallbackFact(todayKey);
       if (!force && funFactState.date === todayKey && isCompleteSentence(funFactState.text)) {
         return;
       }
@@ -217,13 +233,11 @@ const App: React.FC = () => {
         const data = await response.json();
         const rawFact = String(data?.fact ?? data?.reply ?? "").replace(/\s+/g, " ").trim();
         const cleanedFact = rawFact.replace(/^"|"$/g, "");
-        if (!cleanedFact) {
-          throw new Error("Fun fact non disponibile");
-        }
-        setFunFactState({ date: todayKey, text: cleanedFact });
+        const finalFact = cleanedFact || fallbackFact;
+        setFunFactState({ date: todayKey, text: finalFact });
       } catch (error) {
-        const errorMessage = normalizeAiError(error);
-        setFunFactError(errorMessage);
+        setFunFactError(null);
+        setFunFactState({ date: todayKey, text: fallbackFact });
       } finally {
         setFunFactPending(false);
       }
@@ -384,19 +398,16 @@ const App: React.FC = () => {
               })}
             </section>
 
-            <section className="mt-8 space-y-3 fade-up">
-              <div className="wood-pill">UN DATO CHE POTREBBE INTERESSARE</div>
-              <div className="flex items-start gap-3 text-amber-950">
-                <span className="text-2xl">💡</span>
-                <div>
+            <section className="mt-8 fade-up">
+              <div className="wood-pill fun-fact-pill">
+                <div className="fun-fact-title">UN DATO CHE POTREBBE INTERESSARE</div>
+                <div className="fun-fact-body">
+                  <span className="fun-fact-icon">💡</span>
                   <p key={`${funFactState.date}-${funFactState.text.slice(0, 12)}`} className="fun-fact-text fade-up">
                     {funFactPending && !funFactState.text
                       ? "Sto preparando il dato di oggi..."
-                      : funFactState.text || "Nessun dato disponibile."}
+                      : funFactState.text || getFallbackFact(getLocalDateKey())}
                   </p>
-                  {funFactError && !funFactPending && (
-                    <p className="mt-2 text-xs text-amber-900/60">Aggiornamento non riuscito.</p>
-                  )}
                 </div>
               </div>
             </section>
