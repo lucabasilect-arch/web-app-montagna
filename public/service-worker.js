@@ -1,4 +1,4 @@
-const CACHE_NAME = "montagna-dashboard-v2";
+const CACHE_NAME = "montagna-dashboard-v3";
 const CORE_ASSETS = ["/", "/index.html", "/manifest.webmanifest", "/icon.svg"];
 
 self.addEventListener("install", (event) => {
@@ -23,6 +23,23 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") {
     return;
   }
+
+  const requestUrl = new URL(event.request.url);
+  const isNavigation = event.request.mode === "navigate" || requestUrl.pathname === "/";
+
+  if (isNavigation) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cached) =>
       cached ||
